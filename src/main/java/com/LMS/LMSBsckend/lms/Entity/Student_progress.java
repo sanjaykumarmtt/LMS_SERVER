@@ -53,7 +53,7 @@ public class Student_progress {
 
 
 
-	public boolean isCertificateAvailable() {
+	public boolean getCertificateAvailable() {
 		return CertificateAvailable;
 	}
 

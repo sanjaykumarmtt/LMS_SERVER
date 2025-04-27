@@ -1,13 +1,17 @@
 package com.LMS.LMSBsckend.lms.controller;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -87,29 +91,50 @@ public class LmsController {
 //	}
 
 	@PostMapping("/user/paymen_progressr")
-	public ResponseEntity<Student_progress> creder(@RequestBody Student_progress setubaye ) throws RazorpayException{
-		return new ResponseEntity<>(LmsService.Baycorus(setubaye),HttpStatus.CREATED);		
+	public ResponseEntity<Student_progress> creder(@RequestBody Student_progress setubaye) throws RazorpayException {
+		return new ResponseEntity<>(LmsService.Baycorus(setubaye), HttpStatus.CREATED);
 	}
-	
+
 	@PostMapping("/user/paymen_progressr-updata")
-	public RedirectView  UpdateStetes(@RequestParam Map<String, String> responsepay) throws RazorpayException{
-		Student_progress setubaye=LmsService.updateorder(responsepay);
+	public RedirectView UpdateStetes(@RequestParam Map<String, String> responsepay) throws RazorpayException {
+		Student_progress setubaye = LmsService.updateorder(responsepay);
 		System.out.println(responsepay);
-		return new RedirectView("http://localhost:5173/");	
+		return new RedirectView("http://localhost:5173/");
 	}
 
 	@GetMapping("/user/oneidandemail")
-	public ResponseEntity<Student_progress> Idemailgetpay(@RequestParam long id,@RequestParam String email) throws RazorpayException{
-		return  ResponseEntity.ok(LmsService.getemailandid(id, email));	
+	public ResponseEntity<Student_progress> Idemailgetpay(@RequestParam long id, @RequestParam String email)
+			throws RazorpayException {
+		return ResponseEntity.ok(LmsService.getemailandid(id, email));
 	}
-	
-	@PutMapping("user/updatedata_paragarse")
-	public ResponseEntity<Student_progress> Update_progress(@RequestParam String email,@RequestParam  Long courseId,@RequestParam  List<Long> completedVideoIds){
-		return ResponseEntity.ok(LmsService.updateProgress( email,courseId,completedVideoIds));
-		
-	}
-	
 
+	@PutMapping("user/updatedata_paragarse")
+	public ResponseEntity<Student_progress> Update_progress(@RequestParam String email, @RequestParam Long courseId,
+			@RequestParam List<Long> completedVideoIds) {
+		return ResponseEntity.ok(LmsService.updateProgress(email, courseId, completedVideoIds));
+
+	}
+
+	@GetMapping("user/certificate")
+	public ResponseEntity<byte[]> getCertificate(@RequestParam String email, @RequestParam Long courseId)
+			throws Exception {
+//	        Student student = new Student();
+//	        student.setName("John Doe");
+//	        student.setCourse("Java Spring Boot");
+//	        student.setCompletionDate("date " + new Date());
+		byte[] pdfBytes = LmsService.generateCertificate(courseId, email);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDispositionFormData("certificate.pdf", "certificate.pdf");
+		return ResponseEntity.ok().headers(headers).body(pdfBytes);
+		
+//		byte[] pdfbyt = StudService.month_mess_fess_pdfdownote(month);
+//		HttpHeaders headers = new HttpHeaders();
+//		headers.setContentType(MediaType.APPLICATION_PDF);
+//		headers.setContentDispositionFormData("attachment", "Attendanceonemonth.pdf");
+//
+//		return ResponseEntity.ok().headers(headers).body(pdfbyt);
+	}
 
 //lnkhuyftdzdf
 	@GetMapping("/admin/get")

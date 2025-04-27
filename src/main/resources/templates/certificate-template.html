@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Certificate</title>
+    <style>
+        @page {
+            size: A4 landscape; /* லேண்ட்ஸ்கேப் அமைப்பை இங்கே மாற்றுகிறோம் */
+            margin: 0;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            padding: 50px;
+             height: 70%;
+            background-color: #f8f9fa;
+        }
+        .certificate-container {
+            border: 2px solid #ddd;
+            padding: 40px;
+            width: 90%; /* அகலத்தை மாற்றுகிறோம் */
+            margin: 50px auto;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            color: #007bff;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        .name {
+            font-size: 2em;
+            font-weight: bold;
+            color: #343a40;
+            margin-bottom: 10px;
+        }
+        .description {
+            font-size: 1.2em;
+            color: #6c757d;
+            margin-bottom: 30px;
+        }
+        .date, .signature {
+            font-size: 1em;
+            color: #6c757d;
+            margin-top: 20px;
+        }
+        .award-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="certificate-container">
+        <img src="award-icon.png" alt="Award Icon" class="award-icon"/> 
+        <div class="header">CERTIFICATE OF APPRECIATION</div>
+        <div class="name" th:text="${progress.name}">Name Surname</div>
+        <div class="description"> LOREM IPSUM DOLOR SIT AMET, CONSECTETUR</div>
+        <div class=""> INSTITUTE OF : </div><div class="description" th:text="${progress.Course_Provider}"></div>
+        <div class=""> COURSE NAME OF : </div><div class="description" th:text="${progress.coursename}"></div>
+        <div class="description">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce dignissim pretium consectetur. Curabitur tempor posuere massa in varius.</div>
+        <div class="date">DATE</div>
+        <div class="signature">SIGNATURE</div>
+    </div>
+</body>
+</html>

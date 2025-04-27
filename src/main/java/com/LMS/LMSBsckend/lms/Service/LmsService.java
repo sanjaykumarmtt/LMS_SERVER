@@ -1,5 +1,6 @@
 package com.LMS.LMSBsckend.lms.Service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +18,9 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import com.LMS.LMSBsckend.Exception.HostelException;
 import com.LMS.LMSBsckend.Login.Entity.LoginEntity;
@@ -31,18 +35,21 @@ import com.LMS.LMSBsckend.lms.Entity.videos;
 import com.LMS.LMSBsckend.lms.Repository.LmsCorse_Title_Reposirory;
 import com.LMS.LMSBsckend.lms.Repository.PayRepository;
 import com.LMS.LMSBsckend.lms.Repository.video_det;
+import com.lowagie.text.DocumentException;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
 
 @Service
-public class LmsService<R> {
+public class LmsService {
 
 	private LmsCorse_Title_Reposirory LmsCorse_Title_Reposirory;
 	private video_det video_det;
 	private Path videoStorageLocation;
 	private PayRepository PayRepository;
 	private LogRepository LogRepository;
+	private final TemplateEngine templateEngine;
+
 
 	@Value("${razorpay.key.id}")
 	String keyid;
@@ -52,12 +59,13 @@ public class LmsService<R> {
 	private RazorpayClient clinde;
 
 	public LmsService(LmsCorse_Title_Reposirory lmsCorse_Title_Reposirory, video_det video_det,
-			PayRepository PayRepository, LogRepository LogRepository) {
+			PayRepository PayRepository, LogRepository LogRepository,TemplateEngine templateEngine) {
 		super();
 		LmsCorse_Title_Reposirory = lmsCorse_Title_Reposirory;
 		this.video_det = video_det;
 		this.PayRepository = PayRepository;
 		this.LogRepository = LogRepository;
+		this.templateEngine = templateEngine;
 		this.videoStorageLocation = Paths.get("");
 	}
 
@@ -81,7 +89,7 @@ public class LmsService<R> {
 		newCourse.setWhat_you_learn4(Course_det.getWhat_you_learn4());
 
 		List<moduals> newModules = new ArrayList<>();
-		
+
 		for (moduals moduleData : Course_det.getModual()) {
 			moduals newModule = new moduals();
 			newModule.setModeulname(moduleData.getModeulname());
@@ -202,7 +210,7 @@ public class LmsService<R> {
 	// payment table
 	public Student_progress Baycorus(Student_progress setubaye) throws RazorpayException, HostelException {
 		this.clinde = new RazorpayClient(keyid, secretid);
-		Student_progress baye = PayRepository.findBycourseid(setubaye.getCourseId(),setubaye.getEmail());
+		Student_progress baye = PayRepository.findBycourseid(setubaye.getCourseId(), setubaye.getEmail());
 		if (baye != null) {
 			System.out.println(baye.getEmail());
 			return baye;
@@ -237,43 +245,58 @@ public class LmsService<R> {
 		baye.setOrderStatus("PAYMENT_COMPLETED");
 		return PayRepository.save(baye);
 	}
-	
+
 	// get id and email payment table
-		public Student_progress getemailandid(long id,String email) {
-			return PayRepository.findByidandemail(id, email);
-		}
-		
-		 public Student_progress updateProgress(String email, Long courseId, List<Long> completedVideoIds) {
-			 Student_progress progress =PayRepository.findByidandemail(courseId, email);
-		                
+	public Student_progress getemailandid(long id, String email) {
+		return PayRepository.findByidandemail(id, email);
+	}
+
+	public Student_progress updateProgress(String email, Long courseId, List<Long> completedVideoIds) {
+		Student_progress progress = PayRepository.findByidandemail(courseId, email);
 
 //		        progress.setUserId(userId);
 //		        progress.setCourseId(courseId);
 
-		        // 1. Save completed video list
-		        progress.setCompletedVideoIds(completedVideoIds);
+		// 1. Save completed video list
+		progress.setCompletedVideoIds(completedVideoIds);
 
-		        // 2. Calculate total videos in course
-		        Course course = LmsCorse_Title_Reposirory.findById(courseId)
-		                .orElseThrow(() -> new RuntimeException("Course not found"));
+		// 2. Calculate total videos in course
+		Course course = LmsCorse_Title_Reposirory.findById(courseId)
+				.orElseThrow(() -> new RuntimeException("Course not found"));
 
-		        int totalVideos = course.getModual().stream()
-		                                .flatMap(module -> module.getVideos().stream())
-		                                .collect(Collectors.toList())
-		                                .size();
+		int totalVideos = course.getModual().stream().flatMap(module -> module.getVideos().stream())
+				.collect(Collectors.toList()).size();
 
-		        // 3. Calculate percentage
-		        float percentage = (completedVideoIds.size() / (float) totalVideos) * 100;
-		        progress.setPercentage(percentage);
+		// 3. Calculate percentage
+		float percentage = (completedVideoIds.size() / (float) totalVideos) * 100;
+		progress.setPercentage(percentage);
 
-		        // 4. Check for certificate availability
-		        if (percentage >= 100.0) {
-		            progress.setCertificateAvailable(true);
-		        } else {
-		            progress.setCertificateAvailable(false);
-		        }
+		// 4. Check for certificate availability
+		if (percentage >= 100.0) {
+			progress.setCertificateAvailable(true);
+		} else {
+			progress.setCertificateAvailable(false);
+		}
 
-		        // 5. Save updated progress
-		        return PayRepository.save(progress);
-		    }
+		// 5. Save updated progress
+		return PayRepository.save(progress);
+	}
+	
+    public byte[] generateCertificate(long cores_id,String email) throws IOException, DocumentException,HostelException {
+    	Student_progress progress = PayRepository.findByidandemail(cores_id, email);
+    	if(progress.getCertificateAvailable()) {
+    		 Context context = new Context();
+    	        context.setVariable("progress", progress);
+    	        String html = templateEngine.process("certificate-template", context);
+    	        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    	        ITextRenderer renderer = new ITextRenderer();
+    	        renderer.setDocumentFromString(html);
+    	        renderer.layout();
+    	        renderer.createPDF(outputStream);
+    	        return outputStream.toByteArray();
+    	}else {
+    		throw new HostelException("Your Course DId Not Completed");
+    	}
+       
+    }
 }
